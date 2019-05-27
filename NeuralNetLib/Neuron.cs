@@ -8,6 +8,7 @@ namespace NeuralNetLib
     public class Neuron
     {
         private List<float> _weights;
+        private List<float> _accumulatedWeights;
         private float _bias;
 
         private FullyConnectedLayer _layer;
@@ -22,6 +23,14 @@ namespace NeuralNetLib
             get
             {
                 return _weights;
+            }
+        }
+
+        public List<float> AccumulatedWeights
+        {
+            get
+            {
+                return _accumulatedWeights;
             }
         }
 
@@ -63,6 +72,8 @@ namespace NeuralNetLib
             _outputNeurons = new List<Neuron>();
 
             _weights = new List<float>();
+            _accumulatedWeights = new List<float>();
+
             _bias = 0.0f;
         }
 

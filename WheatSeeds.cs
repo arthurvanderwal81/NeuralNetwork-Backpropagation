@@ -74,11 +74,14 @@ namespace NeuralNetwork___Backpropagation
 
             // Classification
             // 7 5 3
-            NeuralNetwork neuralNetwork = NeuralNetwork.Create(7, 3, 1, 5);
+            NeuralNetwork neuralNetwork = NeuralNetwork.Create(7, 3, 1, 20);
 
             // Learning
             Console.WriteLine("Learning: Dataset size: {0}", inputData.Count);
 
+            neuralNetwork.Train(inputData, expectedResults, 500, 50);
+
+            /*
             for (int epoch = 0; epoch < 500; epoch++)
             {
                 Console.WriteLine("Epoch {0}", epoch);
@@ -104,7 +107,7 @@ namespace NeuralNetwork___Backpropagation
 
                     //Console.WriteLine("Processed: {0}", usedIndices.Count);
                 }
-            }
+            }*/
 
             // Validate
             float totalErrors = 0.0f;

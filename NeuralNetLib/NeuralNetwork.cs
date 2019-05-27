@@ -41,6 +41,7 @@ namespace NeuralNetLib
 
                 layer.Neurons[i].InputNeurons.Add(neuron);
                 layer.Neurons[i].Weights.Add(NeuralNetwork.GetRandomFloat(-1.0f, 1.0f));
+                layer.Neurons[i].AccumulatedWeights.Add(0.0f);
             }
         }
 
@@ -160,6 +161,22 @@ namespace NeuralNetLib
             return (float)Math.Sqrt(error);
         }
 
+        public List<float> GetErrorVector(float[] expectedResult)
+        {
+            List<float> result = new List<float>();
+
+            FullyConnectedLayer outputLayer = _layers[_layers.Count - 1];
+
+            for (int neuronIndex = 0; neuronIndex < outputLayer.Count; neuronIndex++)
+            {
+                Neuron neuron = outputLayer.Neurons[neuronIndex];
+
+                result.Add(expectedResult[neuronIndex] - neuron.OutputValue);
+            }
+
+            return result;
+        }
+
         public float GetErrorClassification(float[] expectedOutput)
         {
             int maxExpectedOutputIndex = -1;
@@ -190,9 +207,28 @@ namespace NeuralNetLib
             return maxOutputIndex == maxExpectedOutputIndex ? 0.0f : 1.0f;
         }
 
-        public void BackPropagate(float[] expectedOutput)
+        private void ResetAccumulatedWeights()
         {
-            FullyConnectedLayer outputLayer = _layers[_layers.Count- 1];
+            // reset all accumulatedweightdeltas to 0.0
+            for (int layerIndex = 1; layerIndex < _layers.Count; layerIndex++)
+            {
+                FullyConnectedLayer layer = _layers[layerIndex];
+
+                for (int neuronIndex = 0; neuronIndex < layer.Count; neuronIndex++)
+                {
+                    Neuron neuron = layer.Neurons[neuronIndex];
+
+                    for (int weightIndex = 0; weightIndex < neuron.Weights.Count; weightIndex++)
+                    {
+                        neuron.AccumulatedWeights[weightIndex] = 0.0f;
+                    }
+                }
+            }
+        }
+
+        public void BackPropagate(float[] expectedOutput, bool updateWeights)
+        {
+            FullyConnectedLayer outputLayer = _layers[_layers.Count - 1];
 
             for (int neuronIndex = 0; neuronIndex < outputLayer.Count; neuronIndex++)
             {
@@ -233,7 +269,16 @@ namespace NeuralNetLib
 
                     for (int weightIndex = 0; weightIndex < neuron.Weights.Count; weightIndex++)
                     {
-                        neuron.Weights[weightIndex] += _learningRate * neuron.ErrorSignal * neuron.InputNeurons[weightIndex].OutputValue;
+                        // if !updateWeights, apply this formula to accumulatedWeight variable instead
+                        if (updateWeights)
+                        {
+                            neuron.Weights[weightIndex] += _learningRate * neuron.ErrorSignal * neuron.InputNeurons[weightIndex].OutputValue;
+                        }
+                        else
+                        {
+                            neuron.AccumulatedWeights[weightIndex] += _learningRate * neuron.ErrorSignal * neuron.InputNeurons[weightIndex].OutputValue;
+                        }
+
                         /*
                         if (float.IsInfinity(neuron.Weights[weightIndex]))
                         {
@@ -249,6 +294,69 @@ namespace NeuralNetLib
                     // https://stackoverflow.com/questions/3775032/how-to-update-the-bias-in-neural-network-backpropagation
                     // Backprop bias - init bias to 0.0f
                     neuron.Bias += _learningRate * neuron.ErrorSignal * 1.0f;
+                }
+            }
+        }
+
+        private void UpdateAccumulatedWeights()
+        {
+            // apply accumulatedEWeights to current weights
+            for (int layerIndex = 1; layerIndex < _layers.Count; layerIndex++)
+            {
+                FullyConnectedLayer layer = _layers[layerIndex];
+
+                for (int neuronIndex = 0; neuronIndex < layer.Count; neuronIndex++)
+                {
+                    Neuron neuron = layer.Neurons[neuronIndex];
+
+                    for (int weightIndex = 0; weightIndex < neuron.Weights.Count; weightIndex++)
+                    {
+                        neuron.Weights[weightIndex] += neuron.AccumulatedWeights[weightIndex];
+                    }
+                }
+            }
+        }
+
+        public void Train(List<float[]> trainingData, List<float[]> expectedResults, int epochs, int batchSize)
+        {
+            if (batchSize < 1 || batchSize > trainingData.Count)
+            {
+                throw new ArgumentException("batchSize needs to > 0 and smaller than the trainingData size");
+            }
+
+            for (int epoch = 0; epoch < epochs; epoch++)
+            {
+                Console.WriteLine("Epoch {0}", epoch);
+
+                Random random = new Random();
+                List<int> usedIndices = new List<int>();
+
+                int currentBatch = 0;
+
+                while (usedIndices.Count != trainingData.Count)
+                {
+                    int index = (int)(random.NextDouble() * trainingData.Count);
+
+                    if (usedIndices.Contains(index))
+                    {
+                        continue;
+                    }
+
+                    usedIndices.Add(index);
+
+                    List<float> result = FeedForward(trainingData[index]);
+                    BackPropagate(expectedResults[index], false);
+
+                    currentBatch++;
+
+                    if (currentBatch == batchSize)
+                    {
+                        UpdateAccumulatedWeights();
+
+                        ResetAccumulatedWeights();
+
+                        currentBatch = 0;
+                    }
                 }
             }
         }
