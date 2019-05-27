@@ -1,0 +1,6 @@
+C:\Dev\NeuralNetwork - Backpropagation\NeuralNetLib\bin\Debug\NeuralNetLib.dll
+C:\Dev\NeuralNetwork - Backpropagation\NeuralNetLib\bin\Debug\NeuralNetLib.pdb
+C:\Dev\NeuralNetwork - Backpropagation\NeuralNetLib\obj\Debug\NeuralNetLib.csprojAssemblyReference.cache
+C:\Dev\NeuralNetwork - Backpropagation\NeuralNetLib\obj\Debug\NeuralNetLib.csproj.CoreCompileInputs.cache
+C:\Dev\NeuralNetwork - Backpropagation\NeuralNetLib\obj\Debug\NeuralNetLib.dll
+C:\Dev\NeuralNetwork - Backpropagation\NeuralNetLib\obj\Debug\NeuralNetLib.pdb
