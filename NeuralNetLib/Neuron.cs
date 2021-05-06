@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using NeuralNetLib.Layers;
+using NeuralNetLib.Helpers;
 
 namespace NeuralNetLib
 {
@@ -11,7 +11,7 @@ namespace NeuralNetLib
         private List<float> _accumulatedWeights;
         private float _bias;
 
-        private FullyConnectedLayer _layer;
+        //private FullyConnectedLayer _layer;
 
         private List<Neuron> _inputNeurons;
         private List<Neuron> _outputNeurons;
@@ -64,9 +64,9 @@ namespace NeuralNetLib
         public float OutputValue { get; set; }
         public float ErrorSignal { get; set; }
 
-        public Neuron(FullyConnectedLayer layer)
+        public Neuron(/*FullyConnectedLayer layer*/)
         {
-            _layer = layer;
+            //_layer = layer;
 
             _inputNeurons = new List<Neuron>();
             _outputNeurons = new List<Neuron>();
@@ -92,6 +92,33 @@ namespace NeuralNetLib
             OutputValue += _bias;
 
             return OutputValue;
+        }
+
+        public float CalculateOutput(Array input)
+        {
+            float[] inputValues = input as float[];
+
+            // Hack
+            if (_weights.Count == 0)
+            {
+                for (int i = 0; i < input.Length;i++)
+                {
+                    _weights.Add(RandomHelper.GetRandomFloat(-1.0f, 1.0f));
+                }
+            }
+
+            // need to store inputs for backprop
+
+            float result = 0.0f;
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                result += _weights[i] * inputValues[i];
+            }
+
+            result += _bias;
+
+            return result;
         }
     }
 }

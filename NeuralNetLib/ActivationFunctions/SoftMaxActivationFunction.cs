@@ -4,16 +4,42 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeuralNetLib.ActivationFunctions
+namespace NeuralNetworkSharp.ActivationFunctions
 {
     public class SoftMaxActivationFunction : AbstractActivationFunction
     {
-        public override IList<float> Calculate(IList<float> input)
+        // https://keisan.casio.com/exec/system/15168444286206
+        public override float Calculate(float input)
         {
             throw new NotImplementedException();
         }
 
-        public override IList<float> Derivative(IList<float> input)
+        public override float[] Calculate(float[] input)
+        {
+            float shift = input.Max();
+            List<float> result = input.Select(x => (float)Math.Exp(x - shift)).ToList();
+
+            float expSum = result.Aggregate((acc, cur) => acc + cur);
+            float oneOverExpSum = 1.0f / expSum;
+
+            result = result.Select(x => x * oneOverExpSum).ToList();
+
+            float resultSum = 0.0f;
+
+            for (int i = 0; i < result.Count; i++)
+            {
+                resultSum += result[i];
+            }
+
+            return result.ToArray();
+        }
+
+        public override float Derivative(float input)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override float[] Derivative(float[] input)
         {
             throw new NotImplementedException();
         }

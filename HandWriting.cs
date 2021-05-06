@@ -1,14 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Drawing;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing.Imaging;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+using NeuralNetLib;
 using NeuralNetLib.Layers;
+using NeuralNetLib.Helpers;
+using NeuralNetLib.ActivationFunctions;
 
 namespace NeuralNetwork___Backpropagation
 {
@@ -33,21 +33,30 @@ namespace NeuralNetwork___Backpropagation
             }
 
             public byte[,] ImageData { get; }
-            public float[,] NormalizedImageData { get; private set; }
+            public float[,,] NormalizedImageData { get; private set; }
+            public float[] OneHotVector { get; private set; }
 
             public byte Label { get; }
 
             private void GenerateNormalizedImageData()
             {
-                NormalizedImageData = new float[ImageData.GetLength(0), ImageData.GetLength(1)];
+                // Hardcoded 1 channel
+                NormalizedImageData = new float[1, ImageData.GetLength(0), ImageData.GetLength(1)];
 
                 for (int y = 0; y < ImageData.GetLength(1); y++)
                 {
                     for (int x = 0; x < ImageData.GetLength(0); x++)
                     {
-                        NormalizedImageData[y, x] = (float)ImageData[y, x] / 255.0f;
+                        NormalizedImageData[0, y, x] = (float)ImageData[y, x] / 255.0f;
                     }
                 }
+            }
+
+            private void GenerateOneHotVector()
+            {
+                // Hardcoded 10 classes
+                OneHotVector = new float[10];
+                OneHotVector[Label] = 1.0f;
             }
 
             public HandWrittenImage(byte[,] imageData, byte label)
@@ -56,6 +65,7 @@ namespace NeuralNetwork___Backpropagation
                 Label = label;
 
                 GenerateNormalizedImageData();
+                GenerateOneHotVector();
             }
         }
 
@@ -174,151 +184,61 @@ namespace NeuralNetwork___Backpropagation
             return result.ToArray();
         }
 
+        public static void mainTraining()
+        {
+            Model model = new Model();
+
+            model.Add(new ConvolutionalLayer2D(1, 32, new int[] { 1, 5, 5 }, new int[] { 1, 1 }, ConvolutionalLayer2D.Padding.Same, new ReLuActivationFunction()));
+            model.Add(new MaxPoolingLayer(2));
+            model.Add(new ConvolutionalLayer2D(3, 64, new int[] { 32, 5, 5 }, new int[] { 1, 1 }, ConvolutionalLayer2D.Padding.Same, new ReLuActivationFunction()));
+            model.Add(new MaxPoolingLayer(4));
+            model.Add(new FlattenLayer(5));
+            model.Add(new FullyConnectedLayer(6, 128, new ReLuActivationFunction()));
+            model.Add(new DropoutLayer(7, 0.4f));
+            model.Add(new FullyConnectedLayer(8, 10, new SigmoidActivationFunction()));
+
+            byte[] labels = ReadLabels(_trainingLabelDataPath);
+            List<HandWrittenImage> images = ReadImages(_trainingImageDataPath, labels);
+
+            Model.TrainingData testImages = new Model.TrainingData();
+
+            foreach (HandWrittenImage image in images)
+            {
+                testImages.InputData.Add(image.NormalizedImageData);
+                testImages.ExpectedOutputData.Add(image.OneHotVector);
+
+                break;// 1 image
+            }
+            
+            // 2000 epochs on single image to test convergence
+            model.Train(testImages, 2000, 1);
+        }
+
         public static void main()
         {
-            //byte[] labels = ReadLabels(_trainingLabelDataPath);
-            //List<HandWrittenImage> images = ReadImages(_trainingImageDataPath, labels);
-
-            //https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53
-
-            ConvolutionalLayer2D convolutionalLayer2D = new ConvolutionalLayer2D(0, new int[] { 3, 6, 6 }, 1, new int[] { 3, 3, 3 }, new int[] { 1, 1 }, ConvolutionalLayer2D.Padding.None, null);
-
-            convolutionalLayer2D.OutputValues = new List<float[,]>();
-
-            convolutionalLayer2D.OutputValues.Add(new float[,]
-            {
-                { 12.0f, 20.0f, 30.0f, 0.0f },
-                { 8.0f, 12.0f, 2.0f, 0.0f },
-                { 34.0f, 70.0f, 37.0f, 4.0f },
-                { 112.0f, 100.0f, 25.0f, 12.0f },
-            });
-
-            MaxPoolingLayer maxPoolingLayer = new MaxPoolingLayer(1, convolutionalLayer2D);
-            maxPoolingLayer.CalculateOutput();
+            Model.TrainingData training = new Model.TrainingData();
 
             /*
-
-            convolutionalLayer2D.OutputValues.Add(new float[,]
+            training.InputData.Add(new float[,,]
             {
-                { 0, 1, 2, 3 },
-                { 4, 5, 6, 7 }
+                {
+                    { 1.0f / 10.0f, 2.0f / 10.0f, 3.0f / 10.0f},
+                    { 4.0f / 10.0f, 5.0f / 10.0f, 6.0f / 10.0f},
+                    { 7.0f / 10.0f, 8.0f / 10.0f, 9.0f / 10.0f },
+                }
             });
-
-            convolutionalLayer2D.OutputValues.Add(new float[,]
-            {
-                { 8, 9, 10, 11 },
-                { 12, 13, 14, 15 }
-            });
-
-            convolutionalLayer2D.OutputValues.Add(new float[,]
-            {
-                { 16, 17, 18, 19 },
-                { 20, 21, 22, 23 }
-            });
-
-            FlattenLayer flattenLayer = new FlattenLayer(1, convolutionalLayer2D);
-            flattenLayer.CalculateOutput();
-
             */
 
-            /*
-            for (int channel = 0; channel < layer.InputValues.GetLength(0); channel++)
-            {
-                for (int y = 0; y < layer.InputValues.GetLength(1); y++)
-                {
-                    for (int x = 0; x < layer.InputValues.GetLength(2); x++)
-                    {
-                        layer.InputValues[channel, y, x] = channel + 1.0f;
-                    }
-                }
-            }
+            training.InputData.Add(RandomHelper.GetRandom3DArray(new int[] { 1, 6, 6 }));
 
-            layer.InputValues = new float[,,]
-            {
-                {
-                    {
-                        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-                    },
-                    {
-                        0.0f, 156.0f, 155.0f, 156.0f, 158.0f, 158.0f
-                    },
-                    {
-                        0.0f, 153.0f, 154.0f, 157.0f, 159.0f, 159.0f
-                    },
-                    {
-                        0.0f, 149.0f, 151.0f, 155.0f, 158.0f, 159.0f
-                    },
-                    {
-                        0.0f, 146.0f, 146.0f, 149.0f, 153.0f, 158.0f
-                    },
-                    {
-                        0.0f, 145.0f, 143.0f, 143.0f, 148.0f, 158.0f
-                    }
-                },
-                {
-                    {
-                        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-                    },
-                    {
-                        0.0f, 167.0f, 166.0f, 167.0f, 169.0f, 169.0f
-                    },
-                    {
-                        0.0f, 164.0f, 165.0f, 168.0f, 170.0f, 170.0f
-                    },
-                    {
-                        0.0f, 160.0f, 162.0f, 166.0f, 169.0f, 170.0f
-                    },
-                    {
-                        0.0f, 156.0f, 156.0f, 159.0f, 163.0f, 168.0f
-                    },
-                    {
-                        0.0f, 155.0f, 153.0f, 153.0f, 158.0f, 168.0f
-                    }
-                },
-                {
-                    {
-                        0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-                    },
-                    {
-                        0.0f, 163.0f, 162.0f, 163.0f, 165.0f, 165.0f
-                    },
-                    {
-                        0.0f, 160.0f, 161.0f, 164.0f, 166.0f, 166.0f
-                    },
-                    {
-                        0.0f, 156.0f, 158.0f, 162.0f, 165.0f, 166.0f
-                    },
-                    {
-                        0.0f, 155.0f, 155.0f, 158.0f, 162.0f, 167.0f
-                    },
-                    {
-                        0.0f, 154.0f, 152.0f, 152.0f, 157.0f, 167.0f
-                    }
-                }
-            };
+            training.ExpectedOutputData.Add(new float[] { 1.0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f });
 
-            layer._kernels[0].Weights = new float[,,]
-            {
-                {
-                    { -1.0f, -1.0f, 1.0f },
-                    { 0.0f, 1.0f, -1.0f },
-                    { 0.0f, 1.0f, 1.0f }
-                },
-                {
-                    { 1.0f, 0.0f, 0.0f },
-                    { 1.0f, -1.0f, -1.0f },
-                    { 1.0f, 0.0f, -1.0f }
-                },
-                {
-                    { 0.0f, 1.0f, 1.0f },
-                    { 0.0f, 1.0f, 0.0f },
-                    { 1.0f, -1.0f, 1.0f }
-                }
-            };
+            Model model = new Model();
 
-            layer._kernels[0].Bias = 1.0f;
+            model.Add(new ConvolutionalLayer2D(1, 1, new int[] { 1, 3, 3 }, new int[] { 1, 1 }, ConvolutionalLayer2D.Padding.None, new SigmoidActivationFunction()));
+            model.Add(new FlattenLayer(2));
 
-            layer.CalculateOutput();*/
+            model.Train(training, 500000, 1);
         }
     }
 }

@@ -5,28 +5,38 @@ namespace NeuralNetLib.ActivationFunctions
 {
     public class ReLuActivationFunction : AbstractActivationFunction
     {
-        public override IList<float> Calculate(IList<float> input)
+        public override float Calculate(float input)
+        {
+            return Math.Max(0, input);
+        }
+
+        public override float[] Calculate(float[] input)
         {
             List<float> result = new List<float>();
 
             foreach(float x in input)
             {
-                result.Add(Math.Max(0, x));
+                result.Add(Calculate(x));
             }
 
-            return result;
+            return result.ToArray();
         }
 
-        public override IList<float> Derivative(IList<float> input)
+        public override float Derivative(float input)
+        {
+            return input < 0.0f ? 0.0f : 1.0f;
+        }
+
+        public override float[] Derivative(float[] input)
         {
             List<float> result = new List<float>();
 
             foreach (float x in input)
             {
-                result.Add(x < 0.0f ? 0.0f : 1.0f);
+                result.Add(Calculate(x));
             }
 
-            return result;
+            return result.ToArray();
         }
     }
 }

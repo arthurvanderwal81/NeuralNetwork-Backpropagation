@@ -11,20 +11,23 @@ namespace NeuralNetLib.Layers
     public class FlattenLayer : AbstractLayer
     {
         private int _layerIndex;
-        private AbstractLayer _previousLayer;
+        private int[] _inputShape;
+
+        //private AbstractLayer _previousLayer;
         //private List<Neuron> _neurons;
 
-        public List<float> OutputValues { get; set; }
+        //public List<float> OutputValues { get; set; }
 
-        public FlattenLayer(int layerIndex, AbstractLayer previousLayer)
+        public FlattenLayer(int layerIndex)
         {
+            /*
             if (!(previousLayer is ConvolutionalLayer2D) && !(previousLayer is MaxPoolingLayer))
             {
                 throw new Exception("Invalid previous layer for flatten layer");
-            }
+            }*/
 
             _layerIndex = layerIndex;
-            _previousLayer = previousLayer;
+            //_previousLayer = previousLayer;
 
             //ConvolutionalLayer2D layer = previousLayer as ConvolutionalLayer2D;
 
@@ -39,22 +42,50 @@ namespace NeuralNetLib.Layers
             */
         }
 
-        public void CalculateOutput()
+        public override Array CalculateOutput(Array input)
         {
-            ConvolutionalLayer2D layer = _previousLayer as ConvolutionalLayer2D;
+            float[,,] inputValues = input as float[,,];
 
-            OutputValues = new List<float>();
+            // this can be done once, in a 'compile' like step
+            _inputShape = new int[] { inputValues.GetLength(0), inputValues.GetLength(1), inputValues.GetLength(2) };
 
-            for (int kernelIndex = 0; kernelIndex < layer.OutputValues.Count; kernelIndex++)
+            List<float> result = new List<float>();
+
+            for (int kernelIndex = 0; kernelIndex < inputValues.GetLength(0); kernelIndex++)
             {
-                for (int y = 0; y < layer.OutputValues[kernelIndex].GetLength(0); y++)
+                for (int y = 0; y < inputValues.GetLength(1); y++)
                 {
-                    for (int x = 0; x < layer.OutputValues[kernelIndex].GetLength(1); x++)
+                    for (int x = 0; x < inputValues.GetLength(2); x++)
                     {
-                        OutputValues.Add(layer.OutputValues[kernelIndex][y, x]);
+                        result.Add(inputValues[kernelIndex, y, x]);
                     }
                 }
             }
+
+            return result.ToArray();
+        }
+
+        public override Array BackPropagate(Array error, float learningRate)
+        {
+            float[] errorSignal = error as float[];
+            int flattenedLayerIndex = 0;
+
+            float[,,] result = new float[_inputShape[0], _inputShape[1], _inputShape[2]];
+
+            for (int channel = 0; channel < _inputShape[0]; channel++)
+            {
+                for (int y = 0; y < _inputShape[1]; y++)
+                {
+                    for (int x = 0; x < _inputShape[2]; x++)
+                    {
+                        result[channel, y, x] = errorSignal[flattenedLayerIndex];
+
+                        flattenedLayerIndex++;
+                    }
+                }
+            }
+
+            return result;
         }
     }
 }

@@ -42,14 +42,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ActivationFunctions\AbstractActivationFunction.cs" />
-    <Compile Include="ActivationFunctions\SigmoidActivationFunctions.cs" />
+    <Compile Include="ActivationFunctions\LinearActivationFunction.cs" />
+    <Compile Include="ActivationFunctions\SigmoidActivationFunction.cs" />
     <Compile Include="ActivationFunctions\SoftMaxActivationFunction.cs" />
+    <Compile Include="Helpers\RandomHelper.cs" />
     <Compile Include="Kernel.cs" />
     <Compile Include="Layers\AbstractLayer.cs" />
     <Compile Include="Layers\ConvolutionalLayer2D.cs" />
+    <Compile Include="Layers\DropoutLayer.cs" />
     <Compile Include="Layers\FlattenLayer.cs" />
     <Compile Include="Layers\FullyConnectedLayer.cs" />
     <Compile Include="Layers\MaxPoolingLayer.cs" />
+    <Compile Include="Model.cs" />
     <Compile Include="NeuralNetwork.cs" />
     <Compile Include="Neuron.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

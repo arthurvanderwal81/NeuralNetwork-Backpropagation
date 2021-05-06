@@ -5,13 +5,13 @@ using System.Collections.Generic;
 
 using NeuralNetLib.ActivationFunctions;
 using NeuralNetLib.Layers;
+using NeuralNetLib.Helpers;
 
 namespace NeuralNetLib
 {
     public class NeuralNetwork
     {
         private float _learningRate = 0.01f; //0.1f;
-        private static Random _randomGenerator = new Random();
         private List<FullyConnectedLayer> _layers;
 
         private NeuralNetwork()
@@ -24,14 +24,7 @@ namespace NeuralNetLib
             FullyConnectedLayer layer = new FullyConnectedLayer(layerIndex, neurons, activationFunction);
 
             return layer;
-        }
-
-        private static float GetRandomFloat(float lowerRange, float upperRange)
-        {
-            float range = upperRange - lowerRange;
-
-            return (float)(_randomGenerator.NextDouble() * range + lowerRange);
-        }
+        }        
 
         private static void FullyConnect(Neuron neuron, FullyConnectedLayer layer)
         {
@@ -40,7 +33,7 @@ namespace NeuralNetLib
                 neuron.OutputNeurons.Add(layer.Neurons[i]);
 
                 layer.Neurons[i].InputNeurons.Add(neuron);
-                layer.Neurons[i].Weights.Add(NeuralNetwork.GetRandomFloat(-1.0f, 1.0f));
+                layer.Neurons[i].Weights.Add(RandomHelper.GetRandomFloat(-1.0f, 1.0f));
                 layer.Neurons[i].AccumulatedWeights.Add(0.0f);
             }
         }
@@ -65,7 +58,7 @@ namespace NeuralNetLib
                 }
             }
 
-            result._layers.Add(NeuralNetwork.CreateLayer(hiddenLayers, outputNeurons, new SigmoidActivationFunctions()));
+            result._layers.Add(NeuralNetwork.CreateLayer(hiddenLayers, outputNeurons, new SigmoidActivationFunction()));
 
             previousLayer = result._layers[result._layers.Count - 2];
 
@@ -105,6 +98,7 @@ namespace NeuralNetLib
             return result;
         }
 
+        /*
         public List<List<float>> GetWeights()
         {
             List<List<float>> result = new List<List<float>>();
@@ -115,7 +109,7 @@ namespace NeuralNetLib
             }
 
             return result;
-        }
+        }*/
 
         public List<float> FeedForward(float[] input)
         {
@@ -130,7 +124,7 @@ namespace NeuralNetLib
 
             for (int layerIndex = 1; layerIndex < _layers.Count; layerIndex++)
             {
-                _layers[layerIndex].CalculateOutput();
+                //_layers[layerIndex].CalculateOutput();
             }
 
             List<float> result = new List<float>();

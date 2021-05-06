@@ -7,56 +7,61 @@ namespace NeuralNetLib.Layers
     public class MaxPoolingLayer : AbstractLayer
     {
         private int _layerIndex;
-        private AbstractLayer _previousLayer;
+        //private AbstractLayer _previousLayer;
         private int[] _stride;
         private int[] _size; // size of pooling kernel
 
         public List<float[,]> OutputValues { get; set; }
 
-        public MaxPoolingLayer(int layerIndex, AbstractLayer previousLayer)
+        public MaxPoolingLayer(int layerIndex)
         {
             _layerIndex = layerIndex;
-            _previousLayer = previousLayer;
+            //_previousLayer = previousLayer;
 
             _stride = new int[] { 2, 2 };
             _size = new int[] { 2, 2 };
         }
 
-        public void CalculateOutput()
+        public override Array CalculateOutput(Array input)
         {
-            List<float[,]> result = new List<float[,]>();
+            float[,,] inputValues = input as float[,,];
 
-            ConvolutionalLayer2D layer = _previousLayer as ConvolutionalLayer2D;
+            int outputHeight = (inputValues.GetLength(1) - _size[0]) / _stride[0] + 1;
+            int outputWidth = (inputValues.GetLength(2) - _size[1]) / _stride[1] + 1;
 
-            List<float[,]> inputValues = layer.OutputValues;
+            float[,,] result = new float[inputValues.GetLength(0), outputHeight, outputWidth];
 
-            for (int kernelIndex = 0; kernelIndex < inputValues.Count; kernelIndex++)
+            //ConvolutionalLayer2D layer = _previousLayer as ConvolutionalLayer2D;
+
+            for (int kernelIndex = 0; kernelIndex < inputValues.GetLength(0); kernelIndex++)
             {
-                int outputHeight = (inputValues[kernelIndex].GetLength(0) - _size[0]) / _stride[0] + 1;
-                int outputWidth = (inputValues[kernelIndex].GetLength(1) - _size[1]) / _stride[1] + 1;
+                //float[,] kernelOutput = new float[outputHeight, outputWidth];
 
-                float[,] kernelOutput = new float[outputHeight, outputWidth];
-
-                for (int y = 0; y < kernelOutput.GetLength(0); y++)
+                for (int y = 0; y < outputHeight; y++)
                 {
-                    for (int x = 0; x < kernelOutput.GetLength(1); x++)
+                    for (int x = 0; x < outputWidth; x++)
                     {
                         float[] kernelValues = new float[]
                         {
-                            inputValues[kernelIndex][y * _stride[0], x * _stride[1]],
-                            inputValues[kernelIndex][y * _stride[0], x * _stride[1] + 1],
-                            inputValues[kernelIndex][y * _stride[0] + 1, x * _stride[1]],
-                            inputValues[kernelIndex][y * _stride[0] + 1, x * _stride[1] + 1],
+                            inputValues[kernelIndex, y * _stride[0], x * _stride[1]],
+                            inputValues[kernelIndex, y * _stride[0], x * _stride[1] + 1],
+                            inputValues[kernelIndex, y * _stride[0] + 1, x * _stride[1]],
+                            inputValues[kernelIndex, y * _stride[0] + 1, x * _stride[1] + 1],
                         };
 
-                        kernelOutput[y, x] = Enumerable.Max(kernelValues);
+                        result[kernelIndex, y, x] = Enumerable.Max(kernelValues);
                     }
                 }
 
-                result.Add(kernelOutput);
+                //result.Add(kernelOutput);
             }
 
-            OutputValues = result;
+            return result;
+        }
+
+        public override Array BackPropagate(Array error, float learningRate)
+        {
+            return error;
         }
     }
 }

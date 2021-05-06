@@ -4,7 +4,9 @@ namespace NeuralNetLib.ActivationFunctions
 {
     public abstract class AbstractActivationFunction
     {
-        public abstract IList<float> Calculate(IList<float> input);
-        public abstract IList<float> Derivative(IList<float> input);
+        public abstract float Calculate(float input);
+        public abstract float[] Calculate(float[] input);
+        public abstract float Derivative(float input);
+        public abstract float[] Derivative(float[] input);
     }
 }

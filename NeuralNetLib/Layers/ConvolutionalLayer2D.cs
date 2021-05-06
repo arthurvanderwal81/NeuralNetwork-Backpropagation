@@ -14,6 +14,8 @@ namespace NeuralNetLib.Layers
         }
 
         private int _layerIndex;
+
+        private int[] _kernelSize;
         public List<Kernel> _kernels;
 
         /// <summary>
@@ -26,8 +28,8 @@ namespace NeuralNetLib.Layers
         /// <summary>
         /// [channels, y, x]
         /// </summary>
-        public float[,,] InputValues { get; set; }
-        public List<float[,]> OutputValues { get; set; }
+        //public float[,,] InputValues { get; set; }
+        public float[,,] OutputValues { get; set; }
 
         public AbstractActivationFunction ActivationFunction
         {
@@ -37,11 +39,14 @@ namespace NeuralNetLib.Layers
             }
         }
 
-        public ConvolutionalLayer2D(int layerIndex, int[] inputShape, int kernels, int[] kernelSize, int[] strides, Padding padding, AbstractActivationFunction activationFunction)
+        public ConvolutionalLayer2D(int layerIndex, int kernels, int[] kernelSize, int[] strides, Padding padding, AbstractActivationFunction activationFunction)
         { 
             _layerIndex = layerIndex;
+
             _strides = strides;
             _padding = padding;
+
+            _kernelSize = kernelSize;
             _kernels = new List<Kernel>();
 
             for (int i = 0; i < kernels; i++)
@@ -50,18 +55,12 @@ namespace NeuralNetLib.Layers
             }
 
             _activationFunction = activationFunction;
-
-            if (inputShape != null)
-            {
-                // This means it's the first conv2d layer
-                InputValues = new float[inputShape[0], inputShape[1], inputShape[2]];
-            }
         }
 
-        public float[,,] ZeroPad(float[,,] inputValues, int kernelIndex)
+        public Array ZeroPad(Array inputValues)
         {           
-            int totalPaddingX = (inputValues.GetLength(2) - 1) * _strides[1] - inputValues.GetLength(2) + _kernels[kernelIndex].Weights.GetLength(2);
-            int totalPaddingY = (inputValues.GetLength(1) - 1) * _strides[0] - inputValues.GetLength(1) + _kernels[kernelIndex].Weights.GetLength(1);
+            int totalPaddingX = (inputValues.GetLength(2) - 1) * _strides[1] - inputValues.GetLength(2) + _kernelSize[2];
+            int totalPaddingY = (inputValues.GetLength(1) - 1) * _strides[0] - inputValues.GetLength(1) + _kernelSize[1];
 
             //totalPaddingX = 5;
             //totalPaddingY = 9;
@@ -115,35 +114,24 @@ namespace NeuralNetLib.Layers
 
             return result;
         }
+        
 
-        public int GetOutputChannels(int kernelIndex)
+        public override Array CalculateOutput(Array input)
         {
-            return _kernels[kernelIndex].Weights.GetLength(0);
-        }
+            Array inputValues = input;// as float[][][];
 
-        public int GetKernelCount()
-        {
-            return _kernels.Count;
-        }
+            if (_padding == Padding.Same)
+            {
+                inputValues = ZeroPad(inputValues);
+            }
 
-        public void CalculateOutput()
-        {
-            List<float[,]> result = new List<float[,]>();
+            int outputHeight = (inputValues.GetLength(1) - _kernelSize[1]) / _strides[0] + 1;
+            int outputWidth = (inputValues.GetLength(2) - _kernelSize[2]) / _strides[1] + 1;
+
+            float[,,] result = new float[_kernels.Count, outputHeight, outputWidth];
 
             for (int kernelIndex = 0; kernelIndex < _kernels.Count; kernelIndex++)
             {
-                float[,,] inputValues = InputValues;
-
-                if (_padding == Padding.Same)
-                {
-                    inputValues = ZeroPad(inputValues, kernelIndex);
-                }
-
-                int outputHeight = (inputValues.GetLength(1) - _kernels[kernelIndex].Weights.GetLength(1)) / _strides[0] + 1;
-                int outputWidth =  (inputValues.GetLength(2) - _kernels[kernelIndex].Weights.GetLength(2)) / _strides[1] + 1;
-
-                float[,] kernelOutput = new float[outputHeight, outputWidth];
-
                 for (int channel = 0; channel < inputValues.GetLength(0); channel++)
                 {
                     /*
@@ -164,19 +152,44 @@ namespace NeuralNetLib.Layers
                     }
                     */
 
-                    for (int y = 0; y < kernelOutput.GetLength(0); y++)
+                    for (int y = 0; y < outputHeight; y++)
                     {
-                        for (int x = 0; x < kernelOutput.GetLength(1); x++)
+                        for (int x = 0; x < outputWidth; x++)
                         {
-                            kernelOutput[y, x] = _kernels[kernelIndex].DotProduct(inputValues, x * _strides[1], y * _strides[0]);
+                            result[kernelIndex, y, x] = _activationFunction.Calculate(_kernels[kernelIndex].DotProduct(inputValues, x * _strides[1], y * _strides[0]));
                         }
                     }
                 }
-
-                result.Add(kernelOutput);
             }
 
             OutputValues = result;
+
+            return result;
+        }
+
+        public override Array BackPropagate(Array error, float learningRate)
+        {
+            float[,,] errorSignal = error as float[,,];
+
+            // every output 'pixel' is the result of input * kernel
+            // errorSignal has same shape as output
+
+            for (int kernelIndex = 0; kernelIndex < errorSignal.GetLength(0); kernelIndex++)
+            {
+                _kernels[kernelIndex].ResetErrorSignals();
+
+                for (int y = 0; y < errorSignal.GetLength(1); y++)
+                {
+                    for (int x = 0; x < errorSignal.GetLength(2); x++)
+                    {
+                        _kernels[kernelIndex].AddErrorSignal(errorSignal[kernelIndex, y, x], ActivationFunction.Derivative(OutputValues[kernelIndex, y, x]));
+                    }
+                }
+
+                _kernels[kernelIndex].UpdateWeights(learningRate);
+            }
+
+            return error;
         }
     }
 }

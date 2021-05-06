@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 using NeuralNetLib.ActivationFunctions;
 
 namespace NeuralNetLib.Layers
-{   public class FullyConnectedLayer : AbstractLayer
+{
+    public class FullyConnectedLayer : AbstractLayer
     {
         private int _layerIndex;
         private List<Neuron> _neurons;
@@ -40,27 +42,31 @@ namespace NeuralNetLib.Layers
 
             for (int i = 0; i < neurons; i++)
             {
-                _neurons.Add(new Neuron(this));
+                _neurons.Add(new Neuron());
             }
 
             _activationFunction = activationFunction;
         }
 
-        public void CalculateOutput()
+        public override Array CalculateOutput(Array input)
         {
             List<float> result = new List<float>();
 
             foreach (Neuron neuron in _neurons)
             {
-                result.Add(neuron.CalculateOutput());
+                result.Add(neuron.CalculateOutput(input));
             }
 
             if (_activationFunction == null)
             {
-                return;
+                return result.ToArray();
             }
 
-            IList<float> activatedResult = _activationFunction.Calculate(result);
+            float[] activatedResult = _activationFunction.Calculate(result.ToArray());
+
+            // TODO Store activated result back in neurons or in layer
+
+            return activatedResult;
 
             for (int i = 0; i < _neurons.Count; i++)
             {
@@ -68,8 +74,16 @@ namespace NeuralNetLib.Layers
 
                 neuron.OutputValue = activatedResult[i];
             }
+
+            return result.ToArray();
         }
 
+        public override Array BackPropagate(Array error, float learningRate)
+        {
+            return error;
+        }
+
+        /*
         public List<float> GetWeights()
         {
             List<float> result = new List<float>();
@@ -81,5 +95,6 @@ namespace NeuralNetLib.Layers
 
             return result;
         }
+        */
     }
 }

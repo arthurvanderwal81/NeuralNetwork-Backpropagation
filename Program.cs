@@ -6,9 +6,9 @@ namespace NeuralNetwork___Backpropagation
     {
         static void Main(string[] args)
         {
-            WheatSeeds.main();
+            //WheatSeeds.main();
 
-            //HandWriting.main();
+            HandWriting.main();
 
             //Console.ReadKey();
         }
